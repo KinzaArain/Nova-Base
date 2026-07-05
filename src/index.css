@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Nastaliq+Urdu:wght@400;600&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+@theme {
+  --color-nova-bg: #0B1220;
+  --color-nova-panel: #131B2E;
+  --color-nova-panel-hover: #1A2438;
+  --color-nova-border: #253150;
+  --color-nova-text: #E8ECF4;
+  --color-nova-muted: #7C8AA5;
+  --color-nova-amber: #FFB454;
+  --color-nova-teal: #4FD1C5;
+  --color-nova-red: #FF6B6B;
+
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-nova-bg);
+  color: var(--color-nova-text);
+  font-family: var(--font-body);
+}
+
+[lang="ur"] {
+  font-family: "Noto Nastaliq Urdu", serif;
+  direction: rtl;
+}
+
+[lang="ko"] {
+  font-family: "Noto Sans KR", sans-serif;
+}
+
+::selection {
+  background: var(--color-nova-amber);
+  color: var(--color-nova-bg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-nova-amber);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.scanline {
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(255,255,255,0.015) 3px
+  );
+}
