@@ -48,79 +48,181 @@ export function verifyCertificate(id) {
   return registry[id.trim()] || null;
 }
 
+// Color palette (kept close to the app's navy/amber brand, adapted for print)
+const NAVY = [22, 33, 62]; // #16213E
+const GOLD = [201, 151, 45]; // #C9972D
+const GOLD_LIGHT = [230, 190, 110];
+const TEXT_DARK = [30, 38, 55];
+const TEXT_MUTED = [120, 128, 148];
+const CREAM = [253, 252, 249];
+const PANEL_LIGHT = [246, 244, 238]; // stripe texture tint
+
+function drawStripeTexture(doc, width, height) {
+  doc.setDrawColor(...PANEL_LIGHT);
+  doc.setLineWidth(0.6);
+  const step = 16;
+  for (let x = -height; x < width + height; x += step) {
+    doc.line(x, 0, x + height, height);
+  }
+}
+
+function drawGoldBarWithArrows(doc, x, y, w, h) {
+  doc.setFillColor(...GOLD);
+  doc.rect(x, y, w, h, 'F');
+  // outward-pointing flag arrows at each end
+  doc.triangle(x, y, x, y + h, x - h * 1.4, y + h / 2, 'F');
+  doc.triangle(x + w, y, x + w, y + h, x + w + h * 1.4, y + h / 2, 'F');
+}
+
+function drawSeal(doc, cx, cy) {
+  // outer ring
+  doc.setFillColor(...GOLD);
+  doc.circle(cx, cy, 26, 'F');
+  doc.setFillColor(...NAVY);
+  doc.circle(cx, cy, 21, 'F');
+  // checkmark
+  doc.setDrawColor(...GOLD_LIGHT);
+  doc.setLineWidth(2.2);
+  doc.line(cx - 9, cy + 1, cx - 2, cy + 8);
+  doc.line(cx - 2, cy + 8, cx + 11, cy - 8);
+  // ribbon tails
+  doc.setFillColor(...GOLD);
+  doc.triangle(cx - 14, cy + 20, cx - 2, cy + 20, cx - 8, cy + 42, 'F');
+  doc.triangle(cx + 2, cy + 20, cx + 14, cy + 20, cx + 8, cy + 42, 'F');
+}
+
 export async function downloadCertificatePDF(record) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
   const width = doc.internal.pageSize.getWidth();
   const height = doc.internal.pageSize.getHeight();
+  const cx = width / 2;
 
-  // Background
-  doc.setFillColor(11, 18, 32); // nova-bg
+  // Background + subtle diagonal stripe texture
+  doc.setFillColor(...CREAM);
   doc.rect(0, 0, width, height, 'F');
+  drawStripeTexture(doc, width, height);
 
-  // Border panel
-  doc.setDrawColor(255, 180, 84); // nova-amber
-  doc.setLineWidth(1.5);
-  doc.rect(30, 30, width - 60, height - 60);
+  // Logo mark: gold chevron + "NOVA BASE"
+  const logoY = 70;
+  doc.setFillColor(...GOLD);
+  doc.triangle(cx - 78, logoY - 8, cx - 78, logoY + 8, cx - 68, logoY, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.setTextColor(...NAVY);
+  doc.text('NOVA BASE', cx - 60, logoY + 5, { align: 'left' });
 
-  doc.setTextColor(124, 138, 165); // muted
-  doc.setFontSize(11);
-  doc.text('NOVA BASE // CERTIFICATE OF COMPLETION', width / 2, 75, { align: 'center' });
-
-  doc.setTextColor(232, 236, 244);
+  // Title
+  doc.setFont('times', 'bold');
   doc.setFontSize(30);
-  doc.text('Digital Literacy Program', width / 2, 115, { align: 'center' });
+  doc.setTextColor(...NAVY);
+  doc.text('Certificate of Achievement', cx, 118, { align: 'center' });
 
-  doc.setFontSize(14);
-  doc.setTextColor(124, 138, 165);
-  doc.text('This certifies that', width / 2, 155, { align: 'center' });
+  doc.setFont('times', 'italic');
+  doc.setFontSize(12);
+  doc.setTextColor(...TEXT_MUTED);
+  doc.text('Digital Literacy Launchpad Program \u2014 proudly presented to', cx, 140, { align: 'center' });
 
-  doc.setFontSize(26);
-  doc.setTextColor(255, 180, 84);
-  doc.text(record.learnerName, width / 2, 190, { align: 'center' });
+  // Gold accent bar (top of navy band)
+  const bandX = 60;
+  const bandW = width - 120;
+  const bandTop = 165;
+  const bandH = 175;
+  drawGoldBarWithArrows(doc, bandX, bandTop - 8, bandW, 6);
 
-  doc.setFontSize(13);
-  doc.setTextColor(232, 236, 244);
+  // Navy band
+  doc.setFillColor(...NAVY);
+  doc.rect(bandX, bandTop, bandW, bandH, 'F');
+
+  // Learner name
+  doc.setFont('times', 'italic');
+  doc.setFontSize(32);
+  doc.setTextColor(...GOLD_LIGHT);
+  doc.text(record.learnerName, cx, bandTop + 55, { align: 'center' });
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(1);
+  doc.line(cx - 130, bandTop + 66, cx + 130, bandTop + 66);
+
+  // Short course description
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11.5);
+  doc.setTextColor(...CREAM);
   doc.text(
-    'has completed Course 1: Computer Basics, Course 2: Setting Up Your Workspace,',
-    width / 2,
-    220,
+    'has successfully completed the Nova Base program, covering computer fundamentals,',
+    cx,
+    bandTop + 92,
     { align: 'center' }
   );
   doc.text(
-    `and Course 3: Effective Browsing, with a final assessment score of ${record.score}%.`,
-    width / 2,
-    238,
+    'safe software setup, and effective, critical use of the internet.',
+    cx,
+    bandTop + 108,
     { align: 'center' }
   );
 
-  doc.setFontSize(11);
-  doc.setTextColor(79, 209, 197); // teal
-  doc.text(`Skills verified: ${record.skills.join(' \u2022 ')}`, width / 2, 265, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(...GOLD_LIGHT);
+  doc.text(`Skills verified: ${record.skills.join(' \u2022 ')}`, cx, bandTop + 128, { align: 'center' });
 
+  // Completion date badge
   const issuedDate = new Date(record.issuedAt).toLocaleDateString('en-GB', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
-
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(1);
+  const badgeW = 220;
+  doc.rect(cx - badgeW / 2, bandTop + bandH - 30, badgeW, 22);
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.setTextColor(124, 138, 165);
-  doc.text(`Issued: ${issuedDate}`, 60, height - 60);
-  doc.setFont('courier', 'normal');
-  doc.text(`Certificate ID: ${record.id}`, 60, height - 44);
+  doc.setTextColor(...GOLD_LIGHT);
+  doc.text(`COMPLETED ${issuedDate.toUpperCase()}  \u2022  SCORE ${record.score}%`, cx, bandTop + bandH - 15, {
+    align: 'center',
+  });
 
-  // QR code linking to verification page
+  // Gold accent bar (bottom of navy band)
+  drawGoldBarWithArrows(doc, bandX, bandTop + bandH + 2, bandW, 6);
+
+  // Signature row
+  const sigY = bandTop + bandH + 90;
+  // Left: seal
+  drawSeal(doc, cx - 220, sigY - 10);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(...TEXT_MUTED);
+  doc.text('NOVA BASE \u2014 VERIFIED', cx - 220, sigY + 48, { align: 'center' });
+
+  // Right: founder signature
+  doc.setFont('times', 'italic');
+  doc.setFontSize(22);
+  doc.setTextColor(...TEXT_DARK);
+  doc.text('Kinza', cx + 220, sigY - 6, { align: 'center' });
+  doc.setDrawColor(...TEXT_MUTED);
+  doc.setLineWidth(0.75);
+  doc.line(cx + 160, sigY + 6, cx + 280, sigY + 6);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...TEXT_MUTED);
+  doc.text('Kinza \u2014 Founder, Nova Base', cx + 220, sigY + 20, { align: 'center' });
+
+  // Footer: certificate ID + QR (kept small, for the verification flow)
+  doc.setFont('courier', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...TEXT_MUTED);
+  doc.text(`Certificate ID: ${record.id}`, bandX, height - 34);
+
   try {
     const verifyUrl = `${window.location.origin}/verify?id=${record.id}`;
     const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
       margin: 1,
-      color: { dark: '#0B1220', light: '#E8ECF4' },
+      color: { dark: '#16213E', light: '#FDFCF9' },
     });
-    doc.addImage(qrDataUrl, 'PNG', width - 140, height - 140, 80, 80);
-    doc.setFontSize(8);
-    doc.text('Scan to verify', width - 140, height - 48);
+    doc.addImage(qrDataUrl, 'PNG', width - bandX - 46, height - 80, 46, 46);
+    doc.setFontSize(7.5);
+    doc.text('Scan to verify', width - bandX - 23, height - 28, { align: 'center' });
   } catch {
-    // QR generation failed silently; PDF still contains the ID for manual verification.
+    // QR generation failed silently; the PDF still shows the ID for manual verification.
   }
 
   doc.save(`NovaBase_Certificate_${record.id}.pdf`);
